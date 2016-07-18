@@ -8,7 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const DSN = "root:password@tcp(127.0.0.1:3306)/swift_nuochou_com?clientFoundRows=false&parseTime=true&loc=UTC&timeout=5s&collation=utf8mb4_general_ci"
+const DSN = "root:password@tcp(127.0.0.1:3306)/dbtest?clientFoundRows=false&parseTime=true&loc=UTC&timeout=5s&collation=utf8mb4_general_ci"
 
 var DB *sql.DB
 
