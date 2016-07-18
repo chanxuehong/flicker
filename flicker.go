@@ -3,35 +3,41 @@ package flicker
 import (
 	"database/sql"
 	"errors"
-	"sync"
 )
 
-var (
-	initOnce    sync.Once
-	flickerStmt *sql.Stmt // 常驻内存, 不释放资源, 和进程共存亡
-)
-
-func Init(DB *sql.DB) {
-	if DB == nil {
-		panic("nil *sql.DB")
-	}
-	initOnce.Do(func() {
-		var err error
-		if flickerStmt, err = DB.Prepare("REPLACE INTO flicker(stub) VALUES('a')"); err != nil {
-			panic(err.Error())
-		}
-	})
+type Generator struct {
+	db   *sql.DB
+	stmt *sql.Stmt
 }
 
-var errInitNotCalled = errors.New("Init Not Called")
-
-func NextID() (int64, error) {
-	if flickerStmt == nil {
-		return 0, errInitNotCalled
+// NewGenerator returns a new Generator
+func NewGenerator(db *sql.DB) (*Generator, error) {
+	if db == nil {
+		return nil, errors.New("nil *sql.DB")
 	}
-	rslt, err := flickerStmt.Exec()
+	stmt, err := db.Prepare("REPLACE INTO flicker(stub) VALUES('a')")
+	if err != nil {
+		return nil, err
+	}
+	return &Generator{
+		db:   db,
+		stmt: stmt,
+	}, nil
+}
+
+// NextID returns a new ID.
+func (p *Generator) NextID() (int64, error) {
+	rslt, err := p.stmt.Exec()
 	if err != nil {
 		return 0, err
 	}
 	return rslt.LastInsertId()
+}
+
+// Close releases resources that opened by NewGenerator.
+func (p *Generator) Close() error {
+	if p.stmt != nil {
+		return p.stmt.Close()
+	}
+	return nil
 }
